@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no">
+	<link rel="stylesheet" href="tetris.css">
+	<script src="https://ft-polyfill-service.herokuapp.com/v2/polyfill.min.js"></script>
+	<title>Tetris</title>
+	<script>
+	var settings = 
+	{
+		steppx: 15,
+		borderWidth: 1,
+		downTime: 700,
+		defaultColor: 'lightgray'
+	}
+	var rowsMaxTop = [190, 191, 192, 193, 194, 195, 196, 197, 198, 199];
+	var fieldArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+	var squareArray = [[0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0],
+		[0,0,0,0,0,0,0,0,0,0], [0,0,0,0,0,0,0,0,0,0],];
+	var currentFigure = {};
+	var figures = {
+		'linehor': [-1,0,1,2],
+		'linevert': [0,10,20,30],
+		'square': [0,1,10,11],
+		'nleftvert': [0,9,10,19],
+		'nlefthor': [-1,0,10,11],
+		'nrightvert': [0,10,11,21],
+		'nrighthor': [1,2,10,11],
+		'triang1': [-1,0,1,10],
+		'triang2': [-10,-1,0,10],
+		'triang3': [-1,0,1,-10],
+		'triang4': [-10,0,1,10],
+		'lleft1': [-11,-10,0,10],
+		'lleft2': [-9,-1,0,1],
+		'lleft3': [-10,0,10,11],
+		'lleft4': [-1,0,1,9],
+		'lright1': [-10,-9,0,10],
+		'lright2': [-1,0,1,11],
+		'lright3': [-10,0,9,10],
+		'lright4': [-11,-1,0,1]
+	}
+	var figureNames = ['linehor', 'square', 'nlefthor', 'nrighthor', 'triang1', 'lleft4', 'lright2'];
+	var figureColors = ['blue url(\'skull.png\')', 'blue', 'blue'];
+	var nextFigure = {};
+	var pauseFlag = false;
+	var gameOver = false;
+	var breakButtons = false;
+	var speedCounter = 0;
+	var timerDown = 0;
+	var timerMobileDown = false;
+
+	var Figure = function(center, nextFigure)
+	{
+		this.sq = [];
+		this.name = nextFigure.name;
+		this.color = nextFigure.color;
+		console.log(this.name);
+		this.sq[0] = center + figures[this.name][0];
+		this.sq[1] = center + figures[this.name][1];
+		this.sq[2] = center + figures[this.name][2];
+		this.sq[3] = center + figures[this.name][3];
+
+		this.paint = function(color){
+			for (var i=0; i<4; i++)
+			{
+				document.getElementById('b'+this.sq[i]).style.background = color;
+			}
+		}
+
+		this.paint(this.color);
+	}
+
+	function left(figure)
+	{
+			var tempsq = [figure.sq[0], figure.sq[1], figure.sq[2], figure.sq[3]];
+			var temprow = 0;
+			var stopflag = false;
+			figure.paint(figure.defaultColor);
+			for (var i=0; i<4; i++)
+			{
+				figure.sq[i]--;
+				temprow = figure.sq[i] % 10;
+				if(temprow == 9) stopflag = true;
+			}
+			if(checkpos(figure.sq) || stopflag)
+			{
+				for (var i=0; i<4; i++)
+				{
+					figure.sq[i] = tempsq[i];
+				}
+			}
+			figure.paint(figure.color);
+		}
+	function right(figure)
+	{
+			var tempsq = [figure.sq[0], figure.sq[1], figure.sq[2], figure.sq[3]];
+			var temprow = 0;
+			var stopflag = false;
+			figure.paint(figure.defaultColor);
+			for (var i=0; i<4; i++)
+			{
+				figure.sq[i]++;
+				temprow = figure.sq[i] % 10;
+				if(temprow == 0) stopflag = true;
+			}
+			if(checkpos(figure.sq) || stopflag)
+			{
+				for (var i=0; i<4; i++)
+				{
+					figure.sq[i] = tempsq[i];
+				}
+			}
+			figure.paint(figure.color);
+	}
+	function showNext(nextFigure)
+		{
+			var parentField = document.getElementById('prev');
+			for (var i=0; i<5; i++)
+			{
+				for( var j=0; j<5; j++)
+				{
+					var square = document.getElementById('nb'+i+j);
+					square.style.background = settings.defaultColor;
+				}
+			}
+			var id = 0;
+			for (var i=0; i<4; i++)
+			{
+				id = 12 + figures[nextFigure.name][i];
+				document.getElementById('nb'+id).style.background = nextFigure.color;
+			}
+		}
+	function down (figure)
+	{
+			var tempsq = [figure.sq[0], figure.sq[1], figure.sq[2], figure.sq[3]];
+			var temprow = [];
+			var stopflag = false;
+			figure.paint(figure.defaultColor);
+			for (var i=0; i<4; i++)
+			{
+				figure.sq[i] += 10;
+			}
+			if(checkpos(figure.sq)) stopflag = true;
+			if(stopflag)
+			{
+				clearInterval(timerDown);
+				// clearInterval(timerMobileDown);
+				breakButtons = true;
+				for (var i=0; i<4; i++)
+				{
+					figure.sq[i] = tempsq[i];
+					fieldArray[Math.floor(figure.sq[i] / 10)]++;
+				}
+				figure.paint(figure.color);
+				for (var i=0; i<figure.sq.length; i++)
+				{
+					var string, row = 0;
+					string = Math.floor(figure.sq[i] / 10);
+					row = figure.sq[i] % 10;
+					squareArray[string][row] = 1;
+					console.log('string: '+string+' row: '+row);
+				}
+
+				var k=[];
+				for(var i=0; i<20; i++)
+				{
+					if(fieldArray[i] >= 10)
+					{
+						k.push(i);
+					}
+				}
+				console.log(fieldArray+'for K='+k);
+				var scorefield = document.getElementById('score');
+				var scores = 0;
+				switch (k.length)
+				{
+					case 1: 
+						scores = 100;
+						break;
+					case 2:
+						scores = 200;
+						break;
+					case 3:
+						scores = 400;
+						break;
+					case 4:
+						scores = 700;
+						break;
+					default:
+						scores = 0;
+						break;
+				}
+				scorefield.innerText = parseInt(scorefield.innerText) + scores;
+				while(k.length != 0)
+				{
+					var str = 10*k.pop();
+					var tetris = document.getElementById('tetris');
+					for (var i=str; i<(str+10); i++)
+					{
+						var square = document.createElement('div');
+						square.setAttribute('class', 'fieldsquare');
+						square.style.background = settings.defaultColor;
+						var delsquare = document.getElementById('b'+i);
+						tetris.removeChild(delsquare);
+						tetris.prepend(square);
+					}
+					var all = document.getElementsByClassName('fieldsquare');
+					for(var i=0; i<200; i++)
+					{
+						all[i].setAttribute('id', 'b'+i);
+					}
+					for(var i=(str/10); i>0; i--)
+					{
+						fieldArray[i] = fieldArray[(i-1)];
+						for (var j=0; j<10; j++)
+						{
+							squareArray[i][j] = squareArray[i-1][j];
+						}
+					}
+					for(var i=0; i<10; i++)
+					{
+						for(var j=0; j<200; j += 10)
+						{
+							var id = j + i;
+							if(document.getElementById('b'+ id).style.background != settings.defaultColor)
+							{
+								rowsMaxTop[i] = j + i - 10;
+								if(rowsMaxTop[i] < 0) rowsMaxTop[i] += 10;
+								break;
+							}
+							if(j == 190) rowsMaxTop[i] = j + i;
+						}
+					}
+					for (var i = k.length-1; i>=0; i--)
+					{
+						if(k[i] < (str/10)) k[i]++;
+					}
+					console.log(fieldArray+'for K='+str/10);
+				}
+
+				currentFigure = new Figure(4, nextFigure);
+				nextFigure = Object.create(Figure.prototype.constructor());
+				showNext(nextFigure);
+
+				for (var i=0; i<currentFigure.sq.length; i++)
+				{
+					var string, row = 0;
+					string = Math.floor(currentFigure.sq[i] / 10);
+					row = currentFigure.sq[i] % 10;
+					if(squareArray[string][row] == 1)
+					{
+						gameOver = true;
+						document.getElementById('pause').innerHTML = 'GAME OVER';
+						document.getElementById('pause').setAttribute('style', 'display: block');
+						console.log('GameOver!'+gameOver);
+					}
+				}
+				breakButtons = false;
+				speedCounter++;
+				if (speedCounter > 10)
+				{
+					settings.downTime -= 20;
+					if (settings.downTime < 50) settings.downTime = 50;
+					console.log('DownTime: '+settings.downTime);
+					speedCounter = 0;
+				}
+				timerDown = setInterval(function(){if(!gameOver)down(currentFigure);}, settings.downTime);
+			}
+			else
+			{
+				figure.paint(figure.color);
+			}
+			console.log('rows:'+rowsMaxTop);
+	}
+	function checkpos(arrpos)
+	{
+		var string;
+		var row;
+		for (var i=0; i<arrpos.length; i++)
+		{
+			string = Math.floor(arrpos[i] / 10);
+			row = arrpos[i] % 10;
+			if ((string < 0) || (string > 19)) return true;
+			if ((row < 0) || (row > 9)) return true;
+			if(squareArray[string][row]) return true;
+		}
+		return false;
+	}
+	function rotate(figure)
+	{
+		var temp = [figure.sq[0], figure.sq[1], figure.sq[2], figure.sq[3]];
+		var error = false;
+		var oldName = figure.name;
+		var row = figure.sq[0] % 10;
+		var string = figure.sq[0] / 10;
+		figure.paint(figure.defaultColor);
+			switch (figure.name)
+			{
+				case 'triang1':
+					figure.name = 'triang2';
+					break;
+				case 'triang2':
+					figure.name = 'triang3';
+					if(row > 8) error = true;
+					break;
+				case 'triang3':
+					figure.name = 'triang4';
+					break;
+				case 'triang4':
+					figure.name = 'triang1';
+					if(row < 1) error = true;
+					break;	
+				case 'linehor':
+					figure.name = 'linevert';
+					if ((figure.sq[0] <= 9) || (figure.sq[0] >= 180)) error = true;
+					break;
+				case 'linevert':
+					figure.name = 'linehor';
+					if ((row >= 8) || (row <= 0)) error = true;
+					break;
+				case 'nleftvert':
+					figure.name = 'nlefthor';
+					if ((figure.sq[0] >= 180)|| (row >= 9)) error = true;
+					break;
+				case 'nlefthor':
+					figure.name = 'nleftvert';
+					if ((figure.sq[0] >= 180) || (row >= 8)) error = true;
+					break;
+				case 'nrightvert':
+					figure.name = 'nrighthor';
+					if (row >= 8) error = true;
+					break;
+				case 'nrighthor':
+					figure.name = 'nrightvert';
+					if ((figure.sq[0] <= 9) || (figure.sq[0] >= 180)) error = true;
+					break;
+				case 'lleft1':
+					figure.name = 'lleft2';
+					if ((figure.sq[0] <= 9) || (row >= 8)) error = true;
+					break;
+				case 'lleft2':
+					figure.name = 'lleft3';
+					if(row > 8) error = true;
+					break;
+				case 'lleft3':
+					figure.name = 'lleft4';
+					if ((figure.sq[0] >= 170) || (row < 1)) error = true;
+					break;
+				case 'lleft4':
+					figure.name = 'lleft1';
+					if ((figure.sq[0] <= 9) || (row < 1)) error = true;
+					break;
+				case 'lright1':
+					if((row < 1) || (row >= 8)) error = true;
+					figure.name = 'lright2';
+					break;
+				case 'lright2':
+					figure.name = 'lright3';
+					if((figure.sq[0] <= 9) || (figure.sq[0] >= 180)) error = true;
+					break;
+				case 'lright3':
+					if((row <= 1) || (row > 8)) error = true;
+					figure.name = 'lright4';
+					break;
+				case 'lright4':
+					figure.name = 'lright1';
+					if((figure.sq[0] <= 9) || (figure.sq[0] >= 180)) error = true;
+					break;	
+			}
+			for (var i=0; i<figure.sq.length; i++)
+			{
+				figure.sq[i] -= figures[oldName][i];
+				figure.sq[i] += figures[figure.name][i];
+			}
+			if(checkpos(figure.sq))
+			{
+				error = true;
+			}
+			if(error)
+			{
+				for (var i = 0; i < figure.sq.length; i++)
+				{
+					figure.sq[i] = temp[i];
+				}
+				figure.name = oldName;
+			}
+			figure.paint(figure.color);
+			console.log(figure.name);
+	}
+
+	Figure.prototype.name = 'lright2';
+	Figure.prototype.color = 'blue';
+	Figure.prototype.defaultColor = settings.defaultColor;
+	Figure.prototype.constructor = function()
+	{
+		var rand = Math.floor(Math.random()*figureNames.length);
+		this.name = figureNames[rand];
+		var color = Math.floor(Math.random()*figureColors.length);
+		this.color = figureColors[color];
+		return this;
+	}
+
+	var pauseflag = (function()
+	{
+		var flag = false;
+		return function(){return flag = !flag}
+	}());
+
+	function buttonsCheck(num)
+		{
+			if ((!pauseFlag) && (!gameOver) && (!breakButtons))
+			{
+				switch (num)
+				{
+					case 'rotate':
+						rotate(currentFigure);
+						break;
+					case 'left':
+						left(currentFigure);
+						break;
+					case 'right':
+						right(currentFigure);
+						break;
+				}
+			}
+		}
+	function pauseCheck()
+	{
+		if(pauseFlag = pauseflag())
+		{
+			clearInterval(timerDown);
+			document.getElementById('pause').setAttribute('style', 'display: block');
+		}
+		else
+		{
+			timerDown = setInterval(function(){if(!gameOver)down(currentFigure);}, settings.downTime);
+			document.getElementById('pause').setAttribute('style', 'display: none');
+		}
+	}
+	function buttonsCheckDown(enabled)
+	{
+		if ((!pauseFlag) && (!gameOver) && (!breakButtons))
+		{
+			if(enabled)
+			{
+				down(currentFigure);
+				timerMobileDown = true;
+				setTimeout(function () { if(timerMobileDown) { timerMobileDown = setInterval( function() {down(currentFigure)} , 50);} } , 200);
+			}
+			else
+			{
+				clearInterval(timerMobileDown);
+				timerMobileDown = false;
+			}
+		}
+		else
+		{
+			clearInterval(timerMobileDown);
+			timerMobileDown = false;
+		}
+	}
+
+	document.addEventListener('DOMContentLoaded', function () {
+		document.addEventListener('keydown', (e) =>
+		{
+			var code = e.KeyCode ? e.KeyCode : e.which;
+		if ((!pauseFlag) && (!gameOver) && (!breakButtons))
+		{
+			if (code == 37)
+			{
+				e.preventDefault();
+				left(currentFigure);
+			}
+			if (code == 38)
+			{
+				e.preventDefault();
+				rotate(currentFigure);	
+			}
+			if (code == 39)
+			{
+				e.preventDefault();
+				right(currentFigure);
+			}
+			if (code == 40)
+			{
+				e.preventDefault();
+				down(currentFigure);
+			}
+		}
+		if (code == 32)
+		{
+			e.preventDefault();
+			if(pauseFlag = pauseflag())
+			{
+				clearInterval(timerDown);
+				document.getElementById('pause').setAttribute('style', 'display: block');
+			}
+			else
+			{
+				timerDown = setInterval(function(){if(!gameOver)down(currentFigure);}, settings.downTime);
+				document.getElementById('pause').setAttribute('style', 'display: none');
+			}
+		}
+		});
+
+		function createField()
+		{
+			var parentField = document.getElementById('tetris');
+			for (var i=0; i<200; i++)
+			{
+				var square = document.createElement('div');
+				square.setAttribute('class', 'fieldsquare');
+				square.setAttribute('id', 'b'+i);
+				square.style.background = settings.defaultColor;
+				parentField.appendChild(square);
+				// if ((i % 10) == 0)firstBlocks[Math.floor(i/10)] = square;
+			}
+		}
+
+		function createPrevField()
+		{
+			var parentField = document.getElementById('prev');
+			for (var i=0; i<5; i++)
+			{
+				for( var j=0; j<5; j++)
+				{
+					var square = document.createElement('div');
+					square.setAttribute('class', 'prevsquare');
+					square.setAttribute('id', 'nb'+i+j);
+					square.style.background = settings.defaultColor;
+					parentField.appendChild(square);
+					// if ((i % 10) == 0)firstBlocks[Math.floor(i/10)] = square;
+			}
+			}
+		}
+
+		createField();
+		createPrevField();
+		nextFigure = Object.create(Figure.prototype.constructor());
+		currentFigure = new Figure(4, nextFigure);
+		nextFigure = Object.create(Figure.prototype.constructor());
+		showNext(nextFigure);
+		console.log('Current: '+currentFigure.name);
+		console.log('Next: '+nextFigure.name);
+		timerDown = setInterval(function(){if(!gameOver)down(currentFigure);}, settings.downTime);
+		// setInterval(function () {currentFigure = new Figure(4)}, 5000);
+	});
+	</script>
+</head>
+<body>
+	<div id="container">
+		<div id="tetris">
+		</div>
+		<div id="scores">
+			<p id="score">0</p>
+		</div>
+		<div id="prev"></div>
+		<input id="pausebutton" type="button" onclick="pauseCheck();" value="pause">
+		<div id="buttons">
+			<input id="left" type="button" onclick="buttonsCheck('left');" value="left">
+			<input id="down" type="button" ontouchstart="buttonsCheckDown(true);" onmouseup="buttonsCheckDown(false);" ontouchend="buttonsCheckDown(false);" value="down">
+			<input id="right" type="button" onclick="buttonsCheck('right');"  value="right">
+			<input id="rotate" type="button" onclick="buttonsCheck('rotate');" value="rotate">
+		</div>
+		<div id="pause">PAUSE</div>
+	</div>
+</body>
+</html>

@@ -1,0 +1,135 @@
+#container {
+	margin: 50px auto 0;
+	padding: 0;
+	box-sizing: border-box;
+	width: 218px;
+	height: 336px;
+	/*width: 304px;*/
+	/*height: 302px;*/
+	/*border: 1px solid red;*/
+	position: relative;
+	overflow: hidden;
+}
+#tetris {
+	margin: 0;
+	width: 70%;
+	height: 90%;
+	border: 1px solid black;
+	border-radius: 2px;
+	padding: 0;
+	box-sizing: border-box;
+	position: relative;
+	float: left;
+}
+#scores, #prev {
+	margin: 0;
+	width: 30%;
+	height: 14%;
+	border: 1px solid black;
+	border-left: none;
+	padding: 0;
+	box-sizing: border-box;
+	position: absolute;
+	left: 70%;
+}
+#prev {
+	top: 14%;
+	height: 20%;
+	padding: 3% 1% 1% 3%;
+	border-top: none;
+}
+#score {
+	margin: 0;
+	padding: 0;
+	/*width: 24%;*/
+	/*height: 20%;*/
+	font-size: 100%;
+	text-align: center;
+	line-height: 220%;
+}
+
+#figure {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	position: absolute;
+}
+
+.fieldsquare {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	/*background-color: lightgrey;*/
+	width: 10%;
+	height: 5%;
+	float: left;
+	border-right: 1px solid green;
+	border-top: 1px solid green;
+	border-radius: 1px;
+	/*position: absolute;*/
+}
+.fieldsquare:nth-child(10n) {
+	border-right: none;
+}
+.fieldsquare:nth-child(-n+10){
+	border-top: none;
+}
+
+.prevsquare {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	/*background-color: lightgrey;*/
+	width: 18%;
+	height: 18%;
+	float: left;
+	border-left: 1px solid green;
+	border-top: 1px solid green;
+}
+.prevsquare:nth-child(5n) {
+	border-right: 1px solid green;
+}
+.prevsquare:nth-last-child(-n+5) {
+	border-bottom: 1px solid green;
+}
+#pause {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	width: 70%;
+	height: 55%;
+	border: 1px solid gray;
+	border-radius: 4px;
+	position: absolute;
+	top: 20%;
+	text-align: center;
+	line-height: 200%;
+	font-size: 200%;
+	background-color: lightgray;
+	opacity: 0.7;
+	display: none;
+}
+
+#buttons {
+	width: 100%;
+	height: 10%;
+	/*border: 1px solid red;*/
+	position: absolute;
+	top: 90%;
+}
+
+#buttons input {
+	margin: 0;
+	width: 22%;
+	height: 100%;
+}
+/*#buttons #rotate {
+	width: 97%;
+}*/
+#pausebutton {
+	height: 15%;
+	position: absolute;
+	/*left: 0%;*/
+	top: 74%;
+	/*border: 1px solid red;*/
+}
