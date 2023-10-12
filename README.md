@@ -1,4 +1,4 @@
 Click to run
-# electronshik.github.io/simple-tetris/
+[io/simple-tetris/](https://electronshik.github.io/simple-tetris/)https://electronshik.github.io/simple-tetris/
 
 Simple JS tetris
